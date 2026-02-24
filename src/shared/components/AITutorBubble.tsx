@@ -66,12 +66,15 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     borderWidth: 2,
     borderColor: colors.border,
-    // HTML design: duo-button-shadow = box-shadow: 0 4px 0 rgba(0,0,0,0.1)
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    // HTML: duo-button-shadow - box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+    // Use border to simulate bottom-edge shadow
+    borderBottomWidth: 4,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
     shadowRadius: 0,
-    elevation: 4,
+    elevation: 0,
   },
   triangle: {
     position: 'absolute',

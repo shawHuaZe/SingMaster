@@ -276,9 +276,10 @@ const LearningScreen: React.FC = () => {
             <Text style={styles.closeButton}>✕</Text>
           </TouchableOpacity>
           <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
-            {/* Highlight effect */}
-            <View style={styles.progressHighlight} />
+            <View style={[styles.progressFill, { width: `${progressPercent}%` }]}>
+              {/* Highlight effect - only on yellow portion */}
+              <View style={styles.progressHighlight} />
+            </View>
           </View>
         </View>
 
@@ -465,17 +466,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#E5E5E5',
     borderRadius: 12,
     overflow: 'hidden',
-    // HTML: progress-bar-inner - box-shadow: 0 4px 0 rgba(0,0,0,0.1) inset;
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 0,
-    elevation: 0,
+    // Simulate inset shadow at bottom edge - using border
+    borderBottomWidth: 4,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   progressFill: {
     height: '100%',
     backgroundColor: '#FFC107',
     borderRadius: 12,
+    // Simulate inset shadow at bottom edge
+    borderBottomWidth: 4,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   // Progress bar highlight overlay - inside yellow area
   progressHighlight: {
@@ -574,11 +575,14 @@ const styles = StyleSheet.create({
     borderRadius: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    // HTML design: 0 8px 0 #D9A406, 0 15px 30px rgba(255, 193, 7, 0.3)
-    shadowColor: '#D9A406',
-    shadowOffset: { width: 0, height: 8 },
+    // HTML: mic-button-glow - box-shadow: 0 8px 0 #D9A406, 0 15px 30px rgba(255, 193, 7, 0.3)
+    // Use border to simulate solid bottom shadow + shadow for colored glow
+    borderBottomWidth: 8,
+    borderBottomColor: '#D9A406',
+    shadowColor: 'rgba(255, 193, 7, 0.3)',
+    shadowOffset: { width: 0, height: 15 },
     shadowOpacity: 1,
-    shadowRadius: 0,
+    shadowRadius: 30,
     elevation: 15,
   },
   micIcon: {
