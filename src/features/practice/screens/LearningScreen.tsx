@@ -42,6 +42,7 @@ const LearningScreen: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [isPressing, setIsPressing] = useState(false);
   const [slideCancel, setSlideCancel] = useState(false);
+  const [currentMessage, setCurrentMessage] = useState('你好！我是你的AI歌唱导师。今天我们要学习气口训练。长按麦克风开始录制你的演唱~');
 
   // Animations
   const recordScaleAnim = useRef(new Animated.Value(1)).current;
