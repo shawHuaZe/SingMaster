@@ -198,6 +198,8 @@ const LearningScreen: React.FC = () => {
           </TouchableOpacity>
           <View style={styles.progressBar}>
             <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
+            {/* Highlight effect */}
+            <View style={styles.progressHighlight} />
           </View>
         </View>
 
@@ -364,7 +366,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
+    paddingTop: spacing.xl + 12, // More space from status bar
     paddingBottom: spacing.sm,
     gap: spacing.md,
   },
@@ -379,11 +381,33 @@ const styles = StyleSheet.create({
     backgroundColor: '#E5E5E5',
     borderRadius: 12,
     overflow: 'hidden',
+    // Inner shadow like HTML
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   progressFill: {
     height: '100%',
     backgroundColor: '#FFC107',
     borderRadius: 12,
+    // Inner shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  // Progress bar highlight overlay
+  progressHighlight: {
+    position: 'absolute',
+    top: 4,
+    left: 8,
+    right: 8,
+    height: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 3,
   },
   taskSection: {
     flexDirection: 'row',
@@ -465,11 +489,12 @@ const styles = StyleSheet.create({
     borderRadius: 48,
     alignItems: 'center',
     justifyContent: 'center',
+    // HTML design: 0 8px 0 #D9A406, 0 15px 30px rgba(255, 193, 7, 0.3)
     shadowColor: '#D9A406',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 15,
-    elevation: 8,
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 15,
   },
   micIcon: {
     fontSize: 40,
