@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
   avatarContainer: {
     width: 80,
     height: 80,
-    borderRadius: 20,
+    borderRadius: 40,
     overflow: 'hidden',
     borderWidth: 2,
     borderColor: colors.primary,

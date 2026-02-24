@@ -1,5 +1,5 @@
 // Learning Screen - Main Practice Interface
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   Animated,
   TextInput,
   Modal,
+  FlatList,
+  Dimensions,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -29,24 +31,30 @@ import { RootStackParamList } from '../../../app/navigation/types';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
 const LearningScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { completeLesson: saveProgress } = useProgressStore();
 
   // State
+  const [currentTaskIndex, setCurrentTaskIndex] = useState(0);
   const [currentTask, setCurrentTask] = useState<TrainingTask>(defaultTrainingTasks[0]);
   const [aiAvatar] = useState<AIAvatar>(defaultAIAvatar);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingAnim] = useState(new Animated.Value(1));
   const [currentMessage, setCurrentMessage] = useState('你好！我是你的AI歌唱导师。今天我们要学习气口训练。点击麦克风开始录制你的演唱~');
-  const [taskIndex, setTaskIndex] = useState(0);
 
-  // Editor state
+  // Editor state (hidden from UI)
   const [showEditor, setShowEditor] = useState(false);
   const [editorTitle, setEditorTitle] = useState('');
   const [editorDesc, setEditorDesc] = useState('');
   const [editorGoal, setEditorGoal] = useState('');
   const [editorLyrics, setEditorLyrics] = useState('');
+
+  // Swipe state
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [tasks] = useState<TrainingTask[]>(defaultTrainingTasks);
 
   // Recording animation
   React.useEffect(() => {
@@ -75,7 +83,6 @@ const LearningScreen: React.FC = () => {
     if (!isRecording) {
       setCurrentMessage('正在录音...请开始演唱！');
     } else {
-      // Mock feedback after recording
       setTimeout(() => {
         setCurrentMessage('很好！你的气口处理得很不错。继续练习下一句吧！');
       }, 1000);
@@ -83,16 +90,33 @@ const LearningScreen: React.FC = () => {
   };
 
   const handleNextTask = () => {
-    const nextIndex = (taskIndex + 1) % defaultTrainingTasks.length;
-    setTaskIndex(nextIndex);
-    setCurrentTask(defaultTrainingTasks[nextIndex]);
-    setCurrentMessage(`很好！现在我们来练习：${defaultTrainingTasks[nextIndex].goal}`);
+    const nextIndex = (currentTaskIndex + 1) % tasks.length;
+    setCurrentTaskIndex(nextIndex);
+    setCurrentTask(tasks[nextIndex]);
+    setCurrentMessage(`很好！现在我们来练习：${tasks[nextIndex].goal}`);
+  };
+
+  const handlePrevTask = () => {
+    const prevIndex = (currentTaskIndex - 1 + tasks.length) % tasks.length;
+    setCurrentTaskIndex(prevIndex);
+    setCurrentTask(tasks[prevIndex]);
+    setCurrentMessage(`好的，我们回到：${tasks[prevIndex].goal}`);
+  };
+
+  // Backend function to add task (not exposed in UI)
+  const addTaskToSystem = (task: TrainingTask) => {
+    // This would save to backend/storage in real app
+    console.log('Adding task to system:', task);
+  };
+
+  // Trigger editor (for admin use - can be called programmatically)
+  const triggerEditor = () => {
+    setShowEditor(true);
   };
 
   const handleAddTask = () => {
     if (!editorTitle || !editorLyrics) return;
 
-    // Parse lyrics (simple format: 文本,重音|文本)
     const syllables: LyricSyllable[] = editorLyrics.split(',').map((item, index) => {
       const isEmphasis = item.includes('*');
       const isBreath = item.includes('|');
@@ -113,11 +137,8 @@ const LearningScreen: React.FC = () => {
       syllables,
     };
 
-    // Add to tasks (in real app, save to storage)
-    console.log('New task:', newTask);
+    addTaskToSystem(newTask);
     setShowEditor(false);
-
-    // Reset editor
     setEditorTitle('');
     setEditorDesc('');
     setEditorGoal('');
@@ -126,9 +147,36 @@ const LearningScreen: React.FC = () => {
 
   const progressPercent = 75;
 
+  const renderTaskCard = ({ item, index }: { item: TrainingTask; index: number }) => (
+    <View style={styles.taskCardWrapper}>
+      <TrainingCard task={item} />
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        ref={scrollViewRef}
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={(e) => {
+          const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+          setCurrentTaskIndex(index);
+          setCurrentTask(tasks[index]);
+        }}
+      >
+        {tasks.map((task, index) => (
+          <View key={task.id} style={styles.taskCardWrapper}>
+            <TrainingCard task={task} />
+          </View>
+        ))}
+      </ScrollView>
+
+      {/* Main Content */}
+      <View style={styles.mainContent}>
         {/* Header with Progress */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -139,10 +187,11 @@ const LearningScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* TASK Section */}
+        {/* TASK Section - Bold */}
         <View style={styles.taskSection}>
           <Text style={styles.taskLabel}>
-            TASK: <Text style={styles.taskGoal}>{currentTask.goal}</Text>
+            <Text style={styles.taskLabelBold}>TASK: </Text>
+            <Text style={styles.taskGoal}>{currentTask.goal}</Text>
           </Text>
         </View>
 
@@ -152,29 +201,21 @@ const LearningScreen: React.FC = () => {
           message={currentMessage}
         />
 
-        {/* Training Task Card */}
-        <View style={styles.cardSection}>
-          <TrainingCard task={currentTask} />
+        {/* Task Navigation Dots */}
+        <View style={styles.dotsContainer}>
+          {tasks.map((_, index) => (
+            <View
+              key={index}
+              style={[
+                styles.dot,
+                index === currentTaskIndex && styles.dotActive,
+              ]}
+            />
+          ))}
         </View>
+      </View>
 
-        {/* Task Navigation */}
-        <View style={styles.navSection}>
-          <Button
-            title="下一个任务"
-            onPress={handleNextTask}
-            variant="outline"
-            size="small"
-          />
-          <Button
-            title="+ 添加任务"
-            onPress={() => setShowEditor(true)}
-            variant="ghost"
-            size="small"
-          />
-        </View>
-      </ScrollView>
-
-      {/* Bottom Recording Section */}
+      {/* Bottom Recording Section - Matching HTML style */}
       <View style={styles.bottomSection}>
         <TouchableOpacity
           style={styles.recordButton}
@@ -196,11 +237,11 @@ const LearningScreen: React.FC = () => {
         </Text>
       </View>
 
-      {/* Task Editor Modal */}
+      {/* Task Editor Modal (Backend - not visible in normal UI) */}
       <Modal visible={showEditor} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>添加训练任务</Text>
+            <Text style={styles.modalTitle}>添加训练任务（后台）</Text>
 
             <TextInput
               style={styles.input}
@@ -254,6 +295,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundSecondary,
   },
   scrollView: {
+    position: 'absolute',
+    top: 120,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 350,
+  },
+  taskCardWrapper: {
+    width: SCREEN_WIDTH - 32,
+    marginHorizontal: 16,
+  },
+  mainContent: {
     flex: 1,
   },
   header: {
@@ -286,23 +339,33 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   taskLabel: {
-    ...typography.headingLarge,
+    fontSize: 20,
     color: colors.text,
     textAlign: 'center',
+  },
+  taskLabelBold: {
+    fontWeight: '800',
+    color: colors.text,
   },
   taskGoal: {
     fontWeight: '400',
     color: colors.primary,
   },
-  cardSection: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  navSection: {
+  dotsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.lg,
+    paddingVertical: spacing.md,
+    gap: 8,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.border,
+  },
+  dotActive: {
+    backgroundColor: colors.primary,
+    width: 24,
   },
   bottomSection: {
     alignItems: 'center',
@@ -333,7 +396,8 @@ const styles = StyleSheet.create({
     fontSize: 40,
   },
   recordLabel: {
-    ...typography.headingMedium,
+    fontSize: 20,
+    fontWeight: '800',
     color: colors.text,
   },
   // Modal styles
@@ -349,7 +413,8 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
   },
   modalTitle: {
-    ...typography.headingMedium,
+    fontSize: 18,
+    fontWeight: '600',
     color: colors.text,
     marginBottom: spacing.lg,
     textAlign: 'center',
