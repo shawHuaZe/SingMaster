@@ -10,12 +10,10 @@ import {
   Animated,
   TextInput,
   Modal,
-  FlatList,
   Dimensions,
 } from 'react-native';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useProgressStore } from '../../../core/storage/progressStore';
 import { TrainingCard } from '../../../shared/components/TrainingCard';
 import { AITutorBubble } from '../../../shared/components/AITutorBubble';
 import {
@@ -26,7 +24,7 @@ import {
   AIAvatar,
 } from '../../../shared/types/training';
 import { Button } from '../../../shared/components';
-import { colors, spacing, typography } from '../../../shared/constants';
+import { colors, spacing } from '../../../shared/constants';
 import { RootStackParamList } from '../../../app/navigation/types';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -35,7 +33,6 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const LearningScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { completeLesson: saveProgress } = useProgressStore();
 
   // State
   const [currentTaskIndex, setCurrentTaskIndex] = useState(0);
@@ -52,8 +49,6 @@ const LearningScreen: React.FC = () => {
   const [editorGoal, setEditorGoal] = useState('');
   const [editorLyrics, setEditorLyrics] = useState('');
 
-  // Swipe state
-  const scrollViewRef = useRef<ScrollView>(null);
   const [tasks] = useState<TrainingTask[]>(defaultTrainingTasks);
 
   // Recording animation
@@ -89,29 +84,9 @@ const LearningScreen: React.FC = () => {
     }
   };
 
-  const handleNextTask = () => {
-    const nextIndex = (currentTaskIndex + 1) % tasks.length;
-    setCurrentTaskIndex(nextIndex);
-    setCurrentTask(tasks[nextIndex]);
-    setCurrentMessage(`很好！现在我们来练习：${tasks[nextIndex].goal}`);
-  };
-
-  const handlePrevTask = () => {
-    const prevIndex = (currentTaskIndex - 1 + tasks.length) % tasks.length;
-    setCurrentTaskIndex(prevIndex);
-    setCurrentTask(tasks[prevIndex]);
-    setCurrentMessage(`好的，我们回到：${tasks[prevIndex].goal}`);
-  };
-
-  // Backend function to add task (not exposed in UI)
+  // Backend function to add task
   const addTaskToSystem = (task: TrainingTask) => {
-    // This would save to backend/storage in real app
     console.log('Adding task to system:', task);
-  };
-
-  // Trigger editor (for admin use - can be called programmatically)
-  const triggerEditor = () => {
-    setShowEditor(true);
   };
 
   const handleAddTask = () => {
@@ -147,36 +122,13 @@ const LearningScreen: React.FC = () => {
 
   const progressPercent = 75;
 
-  const renderTaskCard = ({ item, index }: { item: TrainingTask; index: number }) => (
-    <View style={styles.taskCardWrapper}>
-      <TrainingCard task={item} />
-    </View>
-  );
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
-        ref={scrollViewRef}
         style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={(e) => {
-          const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
-          setCurrentTaskIndex(index);
-          setCurrentTask(tasks[index]);
-        }}
       >
-        {tasks.map((task, index) => (
-          <View key={task.id} style={styles.taskCardWrapper}>
-            <TrainingCard task={task} />
-          </View>
-        ))}
-      </ScrollView>
-
-      {/* Main Content */}
-      <View style={styles.mainContent}>
         {/* Header with Progress */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -190,8 +142,7 @@ const LearningScreen: React.FC = () => {
         {/* TASK Section - Bold */}
         <View style={styles.taskSection}>
           <Text style={styles.taskLabel}>
-            <Text style={styles.taskLabelBold}>TASK: </Text>
-            <Text style={styles.taskGoal}>{currentTask.goal}</Text>
+            TASK: <Text style={styles.taskGoal}>{currentTask.goal}</Text>
           </Text>
         </View>
 
@@ -201,35 +152,57 @@ const LearningScreen: React.FC = () => {
           message={currentMessage}
         />
 
-        {/* Task Navigation Dots */}
-        <View style={styles.dotsContainer}>
-          {tasks.map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.dot,
-                index === currentTaskIndex && styles.dotActive,
-              ]}
-            />
-          ))}
-        </View>
-      </View>
+        {/* Training Cards - Swipeable */}
+        <View style={styles.cardsSection}>
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={(e) => {
+              const index = Math.round(e.nativeEvent.contentOffset.x / (SCREEN_WIDTH - 32));
+              const safeIndex = Math.max(0, Math.min(index, tasks.length - 1));
+              setCurrentTaskIndex(safeIndex);
+              setCurrentTask(tasks[safeIndex]);
+            }}
+            contentContainerStyle={styles.cardsScrollContent}
+          >
+            {tasks.map((task) => (
+              <View key={task.id} style={styles.taskCardWrapper}>
+                <TrainingCard task={task} />
+              </View>
+            ))}
+          </ScrollView>
 
-      {/* Bottom Recording Section - Matching HTML style */}
+          {/* Dots */}
+          <View style={styles.dotsContainer}>
+            {tasks.map((_, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.dot,
+                  index === currentTaskIndex && styles.dotActive,
+                ]}
+              />
+            ))}
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* Bottom Recording Section - Matching HTML exactly */}
       <View style={styles.bottomSection}>
         <TouchableOpacity
-          style={styles.recordButton}
+          style={styles.recordButtonWrapper}
           onPress={handleRecord}
           activeOpacity={0.8}
         >
           <Animated.View
             style={[
-              styles.recordButtonInner,
+              styles.recordButton,
               isRecording && styles.recordButtonActive,
               { transform: [{ scale: recordingAnim }] },
             ]}
           >
-            <Text style={styles.recordIcon}>🎤</Text>
+            <Text style={styles.micIcon}>mic</Text>
           </Animated.View>
         </TouchableOpacity>
         <Text style={styles.recordLabel}>
@@ -237,7 +210,7 @@ const LearningScreen: React.FC = () => {
         </Text>
       </View>
 
-      {/* Task Editor Modal (Backend - not visible in normal UI) */}
+      {/* Task Editor Modal (Backend) */}
       <Modal visible={showEditor} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -292,22 +265,13 @@ const LearningScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: '#F7F7F7',
   },
   scrollView: {
-    position: 'absolute',
-    top: 120,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 350,
-  },
-  taskCardWrapper: {
-    width: SCREEN_WIDTH - 32,
-    marginHorizontal: 16,
-  },
-  mainContent: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 200, // Space for bottom section
   },
   header: {
     flexDirection: 'row',
@@ -319,19 +283,19 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     fontSize: 24,
-    color: colors.textTertiary,
+    color: '#999',
     padding: spacing.sm,
   },
   progressBar: {
     flex: 1,
     height: 24,
-    backgroundColor: colors.border,
+    backgroundColor: '#E5E5E5',
     borderRadius: 12,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: colors.primary,
+    backgroundColor: '#FFC107',
     borderRadius: 12,
   },
   taskSection: {
@@ -339,50 +303,64 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   taskLabel: {
-    fontSize: 20,
-    color: colors.text,
-    textAlign: 'center',
-  },
-  taskLabelBold: {
+    fontSize: 24,
     fontWeight: '800',
-    color: colors.text,
+    color: '#333',
+    textAlign: 'center',
+    letterSpacing: 1,
   },
   taskGoal: {
     fontWeight: '400',
-    color: colors.primary,
+    color: '#FFC107',
+  },
+  cardsSection: {
+    paddingTop: spacing.md,
+  },
+  cardsScrollContent: {
+    paddingHorizontal: spacing.lg,
+  },
+  taskCardWrapper: {
+    width: SCREEN_WIDTH - 32,
+    marginRight: 0,
   },
   dotsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.lg,
     gap: 8,
   },
   dot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.border,
+    backgroundColor: '#E5E5E5',
   },
   dotActive: {
-    backgroundColor: colors.primary,
+    backgroundColor: '#FFC107',
     width: 24,
   },
+  // Bottom Section - Matching HTML exactly
   bottomSection: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     alignItems: 'center',
-    paddingVertical: spacing.xxl,
-    paddingBottom: spacing.xxxl,
+    paddingTop: 40,
+    paddingBottom: 64,
     backgroundColor: '#FFFDF0',
   },
-  recordButton: {
-    marginBottom: spacing.md,
+  recordButtonWrapper: {
+    marginBottom: 24,
   },
-  recordButtonInner: {
+  recordButton: {
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: colors.primary,
+    backgroundColor: '#FFC107',
     alignItems: 'center',
     justifyContent: 'center',
+    // Matching HTML mic-button-glow
     shadowColor: '#D9A406',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
@@ -390,15 +368,17 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   recordButtonActive: {
-    backgroundColor: colors.error,
+    backgroundColor: '#FF4B4B',
   },
-  recordIcon: {
+  micIcon: {
     fontSize: 40,
+    color: '#333',
   },
   recordLabel: {
     fontSize: 20,
     fontWeight: '800',
-    color: colors.text,
+    color: '#333',
+    marginTop: 24,
   },
   // Modal styles
   modalOverlay: {
@@ -408,23 +388,23 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   modalContent: {
-    backgroundColor: colors.surface,
-    borderRadius: spacing.radiusLg,
+    backgroundColor: '#fff',
+    borderRadius: 16,
     padding: spacing.xl,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.text,
+    color: '#333',
     marginBottom: spacing.lg,
     textAlign: 'center',
   },
   input: {
-    backgroundColor: colors.backgroundSecondary,
-    borderRadius: spacing.radiusMd,
+    backgroundColor: '#F7F7F7',
+    borderRadius: 12,
     padding: spacing.md,
     fontSize: 16,
-    color: colors.text,
+    color: '#333',
     marginBottom: spacing.md,
   },
   lyricsInput: {
