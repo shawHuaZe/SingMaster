@@ -7,6 +7,7 @@ export type RootStackParamList = {
   LevelDetail: { levelId: string };
   Practice: { levelId: string };
   Result: { score: number; levelId: string };
+  Learning: { taskId?: string };
 };
 
 export type AuthStackParamList = {

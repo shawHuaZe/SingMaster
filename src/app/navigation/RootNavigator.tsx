@@ -9,6 +9,7 @@ import LoginScreen from '../../features/auth/screens/LoginScreen';
 import LevelDetailScreen from '../../features/gamification/screens/LevelDetailScreen';
 import PracticeSessionScreen from '../../features/practice/screens/PracticeSessionScreen';
 import ResultScreen from '../../features/gamification/screens/ResultScreen';
+import LearningScreen from '../../features/practice/screens/LearningScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -69,6 +70,14 @@ export const RootNavigator: React.FC = () => {
               options={{
                 title: '结果',
                 headerBackVisible: false,
+              }}
+            />
+            <Stack.Screen
+              name="Learning"
+              component={LearningScreen}
+              options={{
+                title: '学习',
+                headerShown: false,
               }}
             />
           </>

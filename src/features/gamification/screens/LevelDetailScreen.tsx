@@ -45,7 +45,7 @@ const LevelDetailScreen: React.FC = () => {
   }
 
   const handleStartPractice = () => {
-    navigation.navigate('Practice', { levelId: level.id });
+    navigation.navigate('Learning', { taskId: level.id });
   };
 
   return (

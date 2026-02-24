@@ -1,3 +1,4 @@
 export { Button } from './Button';
 export { Card } from './Card';
-// Export more components as needed
+export { TrainingCard } from './TrainingCard';
+export { AITutorBubble } from './AITutorBubble';
