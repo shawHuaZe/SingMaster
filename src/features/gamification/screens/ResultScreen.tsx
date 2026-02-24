@@ -54,7 +54,7 @@ const ResultScreen: React.FC = () => {
   };
 
   const handleContinue = () => {
-    navigation.navigate('Main');
+    navigation.navigate('Main', { screen: 'Home' } as any);
   };
 
   return (

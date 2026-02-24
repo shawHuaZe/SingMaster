@@ -13,6 +13,7 @@ import {
   Dimensions,
   PanResponder,
 } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { TrainingCard } from '../../../shared/components/TrainingCard';
@@ -43,11 +44,14 @@ const LearningScreen: React.FC = () => {
   const [isPressing, setIsPressing] = useState(false);
   const [slideCancel, setSlideCancel] = useState(false);
   const [currentMessage, setCurrentMessage] = useState('你好！我是你的AI歌唱导师。今天我们要学习气口训练。长按麦克风开始录制你的演唱~');
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   // Animations
   const recordScaleAnim = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
+  const scrollXRef = useRef(new Animated.Value(0)).current;
+  const scrollViewRef = useRef<ScrollView>(null);
 
   // Editor state (hidden from UI)
   const [showEditor, setShowEditor] = useState(false);
@@ -112,9 +116,24 @@ const LearningScreen: React.FC = () => {
           setCurrentMessage('已取消录音');
           setSlideCancel(false);
         } else {
-          // Finish recording
+          // Finish recording - auto slide to next card
           setIsRecording(false);
           setCurrentMessage('很好！你的气口处理得很不错。继续练习下一句吧！');
+
+          // Auto slide to next card if not at the last task
+          if (currentTaskIndex < tasks.length - 1) {
+            setTimeout(() => {
+              const nextIndex = currentTaskIndex + 1;
+              setCurrentTaskIndex(nextIndex);
+              setCurrentTask(tasks[nextIndex]);
+              setCanScrollRight(true);
+              // Scroll to next card
+              scrollViewRef.current?.scrollTo({
+                x: nextIndex * (SCREEN_WIDTH - 32),
+                animated: true,
+              });
+            }, 500);
+          }
         }
 
         // Reset animations
@@ -134,6 +153,34 @@ const LearningScreen: React.FC = () => {
         setIsPressing(false);
         setIsRecording(false);
         setSlideCancel(false);
+      },
+    })
+  ).current;
+
+  // PanResponder for card swipe - only allow swipe left to go back
+  const cardPanResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        // Only respond to horizontal swipes
+        return Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 10;
+      },
+      onPanResponderMove: (evt, gestureState) => {
+        // Only allow swipe left (negative dx) to go back
+        if (gestureState.dx < -30 && currentTaskIndex > 0) {
+          // Swipe left - can go back
+        }
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        // Swipe left to go back to previous card
+        if (gestureState.dx < -50 && currentTaskIndex > 0) {
+          const prevIndex = currentTaskIndex - 1;
+          setCurrentTaskIndex(prevIndex);
+          setCurrentTask(tasks[prevIndex]);
+          scrollViewRef.current?.scrollTo({
+            x: prevIndex * (SCREEN_WIDTH - 32),
+            animated: true,
+          });
+        }
       },
     })
   ).current;
@@ -174,15 +221,47 @@ const LearningScreen: React.FC = () => {
     setEditorLyrics('');
   };
 
-  const progressPercent = 75;
+  // Dynamic progress based on task completion
+  const progressPercent = tasks.length > 0
+    ? ((currentTaskIndex + 1) / tasks.length) * 100
+    : 0;
 
-  // Interpolate glow color
+  // Interpolate glow color and opacity
   const glowColor = glowAnim.interpolate({
     inputRange: [0, 1, 2],
-    outputRange: ['rgba(28, 176, 246, 0)', 'rgba(28, 176, 246, 0.6)', 'rgba(255, 75, 75, 0.6)'],
+    outputRange: ['rgba(28, 176, 246, 0)', 'rgba(28, 176, 246, 0.4)', 'rgba(255, 75, 75, 0.4)'],
+  });
+
+  // Spreading aura scale
+  const glowScale = glowAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.5],
   });
 
   const recordButtonBg = slideCancel ? '#FF4B4B' : '#FFC107';
+
+  // Start spreading glow animation when recording
+  React.useEffect(() => {
+    if (isRecording && !slideCancel) {
+      // Start pulsing animation
+      const pulsingAnim = Animated.loop(
+        Animated.sequence([
+          Animated.timing(glowAnim, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: false,
+          }),
+          Animated.timing(glowAnim, {
+            toValue: 0.5,
+            duration: 500,
+            useNativeDriver: false,
+          }),
+        ])
+      );
+      pulsingAnim.start();
+      return () => pulsingAnim.stop();
+    }
+  }, [isRecording, slideCancel]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -217,18 +296,14 @@ const LearningScreen: React.FC = () => {
           message={currentMessage}
         />
 
-        {/* Training Cards - Swipeable */}
-        <View style={styles.cardsSection}>
+        {/* Training Cards - Auto slide after completion, only swipe left to return */}
+        <View style={styles.cardsSection} {...cardPanResponder.panHandlers}>
           <ScrollView
+            ref={scrollViewRef}
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={(e) => {
-              const index = Math.round(e.nativeEvent.contentOffset.x / (SCREEN_WIDTH - 32));
-              const safeIndex = Math.max(0, Math.min(index, tasks.length - 1));
-              setCurrentTaskIndex(safeIndex);
-              setCurrentTask(tasks[safeIndex]);
-            }}
+            scrollEnabled={false} // Disable manual scroll - only programmatic
             contentContainerStyle={styles.cardsScrollContent}
           >
             {tasks.map((task) => (
@@ -266,16 +341,25 @@ const LearningScreen: React.FC = () => {
           style={styles.recordButtonContainer}
           {...panResponder.panHandlers}
         >
-          {/* Glow effect */}
+          {/* Glow effect - spreading aura */}
           <Animated.View
             style={[
               styles.glowEffect,
               {
                 backgroundColor: glowColor,
-                transform: [{ scale: glowAnim.interpolate({
-                  inputRange: [0, 1, 2],
-                  outputRange: [1, 1.3, 1.3],
-                })}],
+                transform: [{ scale: glowScale }],
+                opacity: isRecording ? 1 : 0,
+              },
+            ]}
+          />
+          {/* Border ring effect */}
+          <Animated.View
+            style={[
+              styles.glowRing,
+              {
+                borderColor: slideCancel ? 'rgba(255, 75, 75, 0.3)' : 'rgba(255, 193, 7, 0.3)',
+                transform: [{ scale: glowScale }],
+                opacity: isRecording ? 1 : 0,
               },
             ]}
           />
@@ -289,8 +373,8 @@ const LearningScreen: React.FC = () => {
               },
             ]}
           >
-            {/* Microphone icon using emoji */}
-            <Text style={styles.micIcon}>🎤</Text>
+            {/* Microphone icon using Material Icons */}
+            <MaterialIcons name="mic" size={40} color="#333" />
           </Animated.View>
         </View>
 
@@ -381,25 +465,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#E5E5E5',
     borderRadius: 12,
     overflow: 'hidden',
-    // Inner shadow like HTML
+    // HTML: progress-bar-inner - box-shadow: 0 4px 0 rgba(0,0,0,0.1) inset;
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowRadius: 0,
+    elevation: 0,
   },
   progressFill: {
     height: '100%',
     backgroundColor: '#FFC107',
     borderRadius: 12,
-    // Inner shadow
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
   },
-  // Progress bar highlight overlay
+  // Progress bar highlight overlay - inside yellow area
   progressHighlight: {
     position: 'absolute',
     top: 4,
@@ -482,6 +560,13 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
+  },
+  glowRing: {
+    position: 'absolute',
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    borderWidth: 4,
   },
   recordButton: {
     width: 96,
