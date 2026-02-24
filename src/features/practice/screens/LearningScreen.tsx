@@ -11,6 +11,7 @@ import {
   TextInput,
   Modal,
   Dimensions,
+  PanResponder,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -29,7 +30,7 @@ import { RootStackParamList } from '../../../app/navigation/types';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const LearningScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
@@ -39,8 +40,13 @@ const LearningScreen: React.FC = () => {
   const [currentTask, setCurrentTask] = useState<TrainingTask>(defaultTrainingTasks[0]);
   const [aiAvatar] = useState<AIAvatar>(defaultAIAvatar);
   const [isRecording, setIsRecording] = useState(false);
-  const [recordingAnim] = useState(new Animated.Value(1));
-  const [currentMessage, setCurrentMessage] = useState('你好！我是你的AI歌唱导师。今天我们要学习气口训练。点击麦克风开始录制你的演唱~');
+  const [isPressing, setIsPressing] = useState(false);
+  const [slideCancel, setSlideCancel] = useState(false);
+
+  // Animations
+  const recordScaleAnim = useRef(new Animated.Value(1)).current;
+  const glowAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
 
   // Editor state (hidden from UI)
   const [showEditor, setShowEditor] = useState(false);
@@ -51,38 +57,85 @@ const LearningScreen: React.FC = () => {
 
   const [tasks] = useState<TrainingTask[]>(defaultTrainingTasks);
 
-  // Recording animation
-  React.useEffect(() => {
-    if (isRecording) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(recordingAnim, {
-            toValue: 1.2,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(recordingAnim, {
-            toValue: 1,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-    } else {
-      recordingAnim.setValue(1);
-    }
-  }, [isRecording]);
+  // PanResponder for slide to cancel
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (evt) => {
+        setIsPressing(true);
+        setIsRecording(true);
+        setCurrentMessage('正在录音...请讲话');
 
-  const handleRecord = () => {
-    setIsRecording(!isRecording);
-    if (!isRecording) {
-      setCurrentMessage('正在录音...请开始演唱！');
-    } else {
-      setTimeout(() => {
-        setCurrentMessage('很好！你的气口处理得很不错。继续练习下一句吧！');
-      }, 1000);
-    }
-  };
+        // Start glow animation
+        Animated.parallel([
+          Animated.spring(recordScaleAnim, {
+            toValue: 1.1,
+            useNativeDriver: true,
+          }),
+          Animated.timing(glowAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: false,
+          }),
+        ]).start();
+      },
+      onPanResponderMove: (evt, gestureState) => {
+        // Slide up to cancel (negative dy)
+        if (gestureState.dy < -50) {
+          setSlideCancel(true);
+          // Change glow to red
+          Animated.timing(glowAnim, {
+            toValue: 2,
+            duration: 200,
+            useNativeDriver: false,
+          }).start();
+        } else {
+          if (slideCancel) {
+            setSlideCancel(false);
+            // Restore blue glow
+            Animated.timing(glowAnim, {
+              toValue: 1,
+              duration: 200,
+              useNativeDriver: false,
+            }).start();
+          }
+        }
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        setIsPressing(false);
+
+        if (slideCancel || gestureState.dy < -50) {
+          // Cancel recording
+          setIsRecording(false);
+          setCurrentMessage('已取消录音');
+          setSlideCancel(false);
+        } else {
+          // Finish recording
+          setIsRecording(false);
+          setCurrentMessage('很好！你的气口处理得很不错。继续练习下一句吧！');
+        }
+
+        // Reset animations
+        Animated.parallel([
+          Animated.spring(recordScaleAnim, {
+            toValue: 1,
+            useNativeDriver: true,
+          }),
+          Animated.timing(glowAnim, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: false,
+          }),
+        ]).start();
+      },
+      onPanResponderTerminate: () => {
+        setIsPressing(false);
+        setIsRecording(false);
+        setSlideCancel(false);
+      },
+    })
+  ).current;
 
   // Backend function to add task
   const addTaskToSystem = (task: TrainingTask) => {
@@ -122,6 +175,14 @@ const LearningScreen: React.FC = () => {
 
   const progressPercent = 75;
 
+  // Interpolate glow color
+  const glowColor = glowAnim.interpolate({
+    inputRange: [0, 1, 2],
+    outputRange: ['rgba(28, 176, 246, 0)', 'rgba(28, 176, 246, 0.6)', 'rgba(255, 75, 75, 0.6)'],
+  });
+
+  const recordButtonBg = slideCancel ? '#FF4B4B' : '#FFC107';
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -139,10 +200,11 @@ const LearningScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* TASK Section - Bold */}
+        {/* TASK Section - Fixed height */}
         <View style={styles.taskSection}>
-          <Text style={styles.taskLabel}>
-            TASK: <Text style={styles.taskGoal}>{currentTask.goal}</Text>
+          <Text style={styles.taskLabel}>TASK: </Text>
+          <Text style={styles.taskGoal} numberOfLines={2}>
+            {currentTask.goal}
           </Text>
         </View>
 
@@ -188,25 +250,49 @@ const LearningScreen: React.FC = () => {
         </View>
       </ScrollView>
 
-      {/* Bottom Recording Section - Matching HTML exactly */}
+      {/* Bottom Recording Section - Long press with slide to cancel */}
       <View style={styles.bottomSection}>
-        <TouchableOpacity
-          style={styles.recordButtonWrapper}
-          onPress={handleRecord}
-          activeOpacity={0.8}
+        {/* Slide up hint */}
+        {isRecording && (
+          <Text style={styles.cancelHint}>
+            {slideCancel ? '松开取消' : '上滑取消'}
+          </Text>
+        )}
+
+        <View
+          style={styles.recordButtonContainer}
+          {...panResponder.panHandlers}
         >
+          {/* Glow effect */}
+          <Animated.View
+            style={[
+              styles.glowEffect,
+              {
+                backgroundColor: glowColor,
+                transform: [{ scale: glowAnim.interpolate({
+                  inputRange: [0, 1, 2],
+                  outputRange: [1, 1.3, 1.3],
+                })}],
+              },
+            ]}
+          />
+
           <Animated.View
             style={[
               styles.recordButton,
-              isRecording && styles.recordButtonActive,
-              { transform: [{ scale: recordingAnim }] },
+              {
+                backgroundColor: recordButtonBg,
+                transform: [{ scale: recordScaleAnim }],
+              },
             ]}
           >
-            <Text style={styles.micIcon}>mic</Text>
+            {/* Microphone icon using emoji */}
+            <Text style={styles.micIcon}>🎤</Text>
           </Animated.View>
-        </TouchableOpacity>
+        </View>
+
         <Text style={styles.recordLabel}>
-          {isRecording ? '录音中...' : '开始录音'}
+          {isRecording ? (slideCancel ? '取消录音' : '录音中...') : '长按录音'}
         </Text>
       </View>
 
@@ -271,7 +357,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 200, // Space for bottom section
+    paddingBottom: 220,
   },
   header: {
     flexDirection: 'row',
@@ -299,19 +385,24 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   taskSection: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
+    minHeight: 80, // Fixed height for 2 lines
   },
   taskLabel: {
     fontSize: 24,
     fontWeight: '800',
     color: '#333',
-    textAlign: 'center',
     letterSpacing: 1,
   },
   taskGoal: {
+    flex: 1,
+    fontSize: 20,
     fontWeight: '400',
     color: '#FFC107',
+    marginLeft: spacing.sm,
   },
   cardsSection: {
     paddingTop: spacing.md,
@@ -339,7 +430,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFC107',
     width: 24,
   },
-  // Bottom Section - Matching HTML exactly
+  // Bottom Section
   bottomSection: {
     position: 'absolute',
     bottom: 0,
@@ -350,29 +441,37 @@ const styles = StyleSheet.create({
     paddingBottom: 64,
     backgroundColor: '#FFFDF0',
   },
-  recordButtonWrapper: {
+  cancelHint: {
+    fontSize: 14,
+    color: '#FF4B4B',
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  recordButtonContainer: {
     marginBottom: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  glowEffect: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
   },
   recordButton: {
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: '#FFC107',
     alignItems: 'center',
     justifyContent: 'center',
-    // Matching HTML mic-button-glow
     shadowColor: '#D9A406',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 15,
     elevation: 8,
   },
-  recordButtonActive: {
-    backgroundColor: '#FF4B4B',
-  },
   micIcon: {
     fontSize: 40,
-    color: '#333',
   },
   recordLabel: {
     fontSize: 20,
