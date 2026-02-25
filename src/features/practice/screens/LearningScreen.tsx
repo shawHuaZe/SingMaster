@@ -371,7 +371,7 @@ const LearningScreen: React.FC = () => {
               styles.glowPulse,
               {
                 transform: [{ scale: glowScale }],
-                opacity: glowOpacity,
+                opacity: isRecording ? glowOpacity : 0,
               },
             ]}
           />
