@@ -45,6 +45,7 @@ const LearningScreen: React.FC = () => {
   const [slideCancel, setSlideCancel] = useState(false);
   const [currentMessage, setCurrentMessage] = useState('你好！我是你的AI歌唱导师。今天我们要学习气口训练。长按麦克风开始录制你的演唱~');
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [completedTasksCount, setCompletedTasksCount] = useState(0);
 
   // Animations
   const recordScaleAnim = useRef(new Animated.Value(1)).current;
@@ -120,6 +121,9 @@ const LearningScreen: React.FC = () => {
           // Finish recording - auto slide to next card
           setIsRecording(false);
           setCurrentMessage('很好！你的气口处理得很不错。继续练习下一句吧！');
+
+          // Increment completed tasks count
+          setCompletedTasksCount(prev => prev + 1);
 
           // Auto slide to next card if not at the last task
           if (currentTaskIndex < tasks.length - 1) {
@@ -224,17 +228,17 @@ const LearningScreen: React.FC = () => {
 
   // Dynamic progress based on task completion - start at 0%, advance by 1/n for each completed task
   const progressPercent = tasks.length > 0
-    ? (currentTaskIndex / tasks.length) * 100
+    ? (completedTasksCount / tasks.length) * 100
     : 0;
 
-  // Animate progress bar when task index changes
+  // Animate progress bar when completed tasks count changes
   React.useEffect(() => {
     Animated.timing(progressAnim, {
       toValue: progressPercent,
       duration: 500,
       useNativeDriver: false,
     }).start();
-  }, [currentTaskIndex]);
+  }, [completedTasksCount]);
 
   // Interpolate glow color and opacity
   const glowColor = glowAnim.interpolate({
