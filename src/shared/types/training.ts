@@ -19,7 +19,7 @@ export interface TrainingTask {
 export interface AIAvatar {
   id: string;
   name: string;
-  imageUrl: string;
+  imageUrl: string | ReturnType<typeof require>;
 }
 
 // Mock training data
@@ -58,5 +58,5 @@ export const defaultTrainingTasks: TrainingTask[] = [
 export const defaultAIAvatar: AIAvatar = {
   id: 'avatar_1',
   name: '小音老师',
-  imageUrl: 'https://minimax-algeng-chat-tts.oss-cn-wulanchabu.aliyuncs.com/ccv2%2F2026-02-25%2FMiniMax-M2.1%2F2018303382871085324%2F7cdb798d42506f570679ccceb1591c127e14bca273cf51e11821e8691b902cfb..png',
+  imageUrl: require('../../../assets/images/ai_avatar.png'),
 };

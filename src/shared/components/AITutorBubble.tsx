@@ -10,12 +10,17 @@ interface AITutorBubbleProps {
 }
 
 export const AITutorBubble: React.FC<AITutorBubbleProps> = ({ avatar, message }) => {
+  // Handle both string URLs and local require() images
+  const imageSource = typeof avatar.imageUrl === 'string'
+    ? { uri: avatar.imageUrl }
+    : avatar.imageUrl;
+
   return (
     <View style={styles.container}>
       {/* AI Avatar */}
       <View style={styles.avatarContainer}>
         <Image
-          source={{ uri: avatar.imageUrl }}
+          source={imageSource}
           style={styles.avatar}
           resizeMode="cover"
         />
