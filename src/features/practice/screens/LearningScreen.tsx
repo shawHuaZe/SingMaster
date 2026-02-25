@@ -221,9 +221,9 @@ const LearningScreen: React.FC = () => {
     setEditorLyrics('');
   };
 
-  // Dynamic progress based on task completion
+  // Dynamic progress based on task completion - start at 0%, increase after completing each task
   const progressPercent = tasks.length > 0
-    ? ((currentTaskIndex + 1) / tasks.length) * 100
+    ? (currentTaskIndex / tasks.length) * 100
     : 0;
 
   // Interpolate glow color and opacity
@@ -365,18 +365,21 @@ const LearningScreen: React.FC = () => {
             ]}
           />
 
-          <Animated.View
-            style={[
-              styles.recordButton,
-              {
-                backgroundColor: recordButtonBg,
-                transform: [{ scale: recordScaleAnim }],
-              },
-            ]}
-          >
-            {/* Microphone icon using Material Icons */}
-            <MaterialIcons name="mic" size={40} color="#333" />
-          </Animated.View>
+          {/* Shadow container for proper Android shadow */}
+          <View style={styles.recordButtonShadowContainer}>
+            <Animated.View
+              style={[
+                styles.recordButton,
+                {
+                  backgroundColor: recordButtonBg,
+                  transform: [{ scale: recordScaleAnim }],
+                },
+              ]}
+            >
+              {/* Microphone icon using Material Icons */}
+              <MaterialIcons name="mic" size={40} color="#333" />
+            </Animated.View>
+          </View>
         </View>
 
         <Text style={styles.recordLabel}>
@@ -569,21 +572,27 @@ const styles = StyleSheet.create({
     borderRadius: 70,
     borderWidth: 4,
   },
+  // Container for shadow effect (works on both web and Android)
+  recordButtonShadowContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    // Shadow for glow effect: 0 15px 30px rgba(255, 193, 7, 0.3)
+    shadowColor: 'rgba(255, 193, 7, 0.3)',
+    shadowOffset: { width: 0, height: 15 },
+    shadowOpacity: 1,
+    shadowRadius: 30,
+    elevation: 15,
+  },
+  // Actual button without shadow - shadow is handled by View wrapper
   recordButton: {
     width: 96,
     height: 96,
     borderRadius: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    // HTML: mic-button-glow - box-shadow: 0 8px 0 #D9A406, 0 15px 30px rgba(255, 193, 7, 0.3)
-    // Use border to simulate solid bottom shadow + shadow for colored glow
+    // Solid bottom border to simulate 0 8px 0 #D9A406
     borderBottomWidth: 8,
     borderBottomColor: '#D9A406',
-    shadowColor: 'rgba(255, 193, 7, 0.3)',
-    shadowOffset: { width: 0, height: 15 },
-    shadowOpacity: 1,
-    shadowRadius: 30,
-    elevation: 15,
   },
   micIcon: {
     fontSize: 40,

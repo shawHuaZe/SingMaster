@@ -58,5 +58,5 @@ export const defaultTrainingTasks: TrainingTask[] = [
 export const defaultAIAvatar: AIAvatar = {
   id: 'avatar_1',
   name: '小音老师',
-  imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDUQ3wNQgyeEx9jbhxAlKkao71DR2NpxIhcBu3ZJvZaSdXYsga3QMCyiYbKzyYBmDwd0mgfE-SIKaPSPt21hPDs926OftfLRASSFjfoS8n7NgfiPZxbzel-MTjMnjYHB9AVKhqZuvqGm2P8vOFJwNzjZaRa1QgqMk2gaBMjjMSvdIu-uciQcZSgf_ZxHACVhBJZxIEJAyG4ykLKxN4C3SQ3X48C6vQtdNU-jHZsiUYZ5BgixYNM3zx_Vy-LGGb_LdXTihcv8HwwUs8',
+  imageUrl: 'https://minimax-algeng-chat-tts.oss-cn-wulanchabu.aliyuncs.com/ccv2%2F2026-02-25%2FMiniMax-M2.1%2F2018303382871085324%2F7cdb798d42506f570679ccceb1591c127e14bca273cf51e11821e8691b902cfb..png',
 };
