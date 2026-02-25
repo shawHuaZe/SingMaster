@@ -113,13 +113,17 @@ export const Button: React.FC<ButtonProps> = ({
   );
 };
 
+// Duolingo-style button with shadow
 const styles = StyleSheet.create({
   base: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: spacing.radiusMd,
+    borderRadius: spacing.radiusLg,
     gap: spacing.sm,
+    // Duolingo shadow: 0 4px 0 rgba(0,0,0,0.1)
+    borderBottomWidth: 4,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   size_small: {
     paddingVertical: spacing.sm,
@@ -137,7 +141,8 @@ const styles = StyleSheet.create({
     minHeight: 56,
   },
   text: {
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   text_small: {
     fontSize: 14,

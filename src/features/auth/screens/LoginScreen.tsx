@@ -123,7 +123,7 @@ const LoginScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.backgroundLight,
   },
   keyboardView: {
     flex: 1,
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xxxl,
   },
   logo: {
-    fontSize: 64,
+    fontSize: 80,
     marginBottom: spacing.md,
   },
   appName: {
@@ -162,11 +162,13 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   input: {
-    backgroundColor: colors.backgroundSecondary,
-    borderRadius: spacing.radiusMd,
-    padding: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: spacing.radiusLg,
+    padding: spacing.lg,
     fontSize: 16,
     color: colors.text,
+    borderWidth: 2,
+    borderColor: colors.border,
   },
   codeRow: {
     flexDirection: 'row',
@@ -176,14 +178,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   codeButton: {
-    backgroundColor: colors.primaryLight,
-    borderRadius: spacing.radiusMd,
-    paddingHorizontal: spacing.md,
+    backgroundColor: colors.secondary,
+    borderRadius: spacing.radiusLg,
+    paddingHorizontal: spacing.lg,
     justifyContent: 'center',
+    // Duolingo shadow
+    borderBottomWidth: 4,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   codeButtonText: {
     color: '#fff',
-    fontWeight: '600',
+    fontWeight: '700',
   },
   button: {
     marginTop: spacing.md,
@@ -200,8 +205,8 @@ const styles = StyleSheet.create({
   },
   switchButton: {
     ...typography.bodyMedium,
-    color: colors.primary,
-    fontWeight: '600',
+    color: colors.secondary,
+    fontWeight: '700',
   },
 });
 

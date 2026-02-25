@@ -148,7 +148,7 @@ const HomeScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: colors.backgroundLight,
   },
   scrollView: {
     flex: 1,
@@ -189,6 +189,9 @@ const styles = StyleSheet.create({
   },
   dailyCard: {
     marginBottom: spacing.xl,
+    // Duolingo shadow
+    borderBottomWidth: 4,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   dailyHeader: {
     flexDirection: 'row',
@@ -205,16 +208,19 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   progressBar: {
-    height: 8,
+    height: 12,
     backgroundColor: colors.border,
-    borderRadius: 4,
+    borderRadius: spacing.radiusSm,
     overflow: 'hidden',
     marginBottom: spacing.sm,
+    // Duolingo inner shadow
+    borderBottomWidth: 2,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: colors.primary,
-    borderRadius: 4,
+    backgroundColor: colors.secondary,
+    borderRadius: spacing.radiusSm,
   },
   dailyHint: {
     ...typography.bodySmall,
@@ -230,6 +236,9 @@ const styles = StyleSheet.create({
   },
   continueCard: {
     backgroundColor: colors.primary,
+    // Duolingo shadow
+    borderBottomWidth: 4,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   continueContent: {
     flexDirection: 'row',
@@ -272,9 +281,14 @@ const styles = StyleSheet.create({
   quickCard: {
     width: '47%',
     backgroundColor: colors.surface,
-    borderRadius: spacing.radiusMd,
+    borderRadius: spacing.radiusXxl,
     padding: spacing.lg,
     alignItems: 'center',
+    // Duolingo shadow
+    borderWidth: 2,
+    borderColor: colors.border,
+    borderBottomWidth: 4,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   quickIcon: {
     fontSize: 32,
@@ -291,6 +305,9 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     alignItems: 'center',
+    // Duolingo shadow
+    borderBottomWidth: 4,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   statValue: {
     ...typography.numeric,

@@ -37,21 +37,19 @@ export const Card: React.FC<CardProps> = ({
   return <View style={cardStyle}>{children}</View>;
 };
 
+// Duolingo-style card
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderRadius: spacing.radiusMd,
+    borderRadius: spacing.radiusXxl,
     padding: spacing.cardPadding,
+    borderWidth: 2,
+    borderColor: colors.border,
   },
   elevated: {
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    // Duolingo shadow: 0 4px 0 rgba(0,0,0,0.1)
+    borderBottomWidth: 4,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
 });
 

@@ -1,4 +1,4 @@
-// Design System - Spacing
+// Design System - Duolingo Style Spacing
 export const spacing = {
   // Base unit: 4px
   xxs: 2,
@@ -10,18 +10,19 @@ export const spacing = {
   xxl: 24,
   xxxl: 32,
 
-  // Component-specific
-  screenPadding: 16,
-  cardPadding: 16,
+  // Component-specific - Duolingo style
+  screenPadding: 24,
+  cardPadding: 24,
   sectionGap: 24,
-  itemGap: 12,
+  itemGap: 16,
 
-  // Border radius
+  // Border radius - Duolingo style: rounded, playful
   radiusXs: 4,
   radiusSm: 8,
   radiusMd: 12,
   radiusLg: 16,
-  radiusXl: 24,
+  radiusXl: 20,
+  radiusXxl: 32,
   radiusFull: 9999,
 };
 

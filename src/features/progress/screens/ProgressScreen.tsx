@@ -139,7 +139,7 @@ const ProgressScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: colors.backgroundLight,
   },
   scrollView: {
     flex: 1,
