@@ -389,20 +389,22 @@ const LearningScreen: React.FC = () => {
             ]}
           />
 
-          {/* Shadow container for proper Android shadow */}
-          <View style={styles.recordButtonShadowContainer}>
-            <Animated.View
-              style={[
-                styles.recordButton,
-                {
-                  backgroundColor: recordButtonBg,
-                  transform: [{ scale: recordScaleAnim }],
-                },
-              ]}
-            >
-              {/* Microphone icon using Material Icons */}
-              <MaterialIcons name="mic" size={40} color="#333" />
-            </Animated.View>
+          {/* Three-layer nested View for two-layer shadow (iOS + Android compatible) */}
+          <View style={styles.shadowBlurContainer}>
+            <View style={styles.shadowSolidContainer}>
+              <Animated.View
+                style={[
+                  styles.recordButton,
+                  {
+                    backgroundColor: recordButtonBg,
+                    transform: [{ scale: recordScaleAnim }],
+                  },
+                ]}
+              >
+                {/* Microphone icon using Material Icons */}
+                <MaterialIcons name="mic" size={40} color="#111827" />
+              </Animated.View>
+            </View>
           </View>
         </View>
 
@@ -596,27 +598,37 @@ const styles = StyleSheet.create({
     borderRadius: 70,
     borderWidth: 4,
   },
-  // Container for shadow effect (works on both web and Android)
-  recordButtonShadowContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    // Shadow for glow effect: 0 15px 30px rgba(255, 193, 7, 0.3)
-    shadowColor: 'rgba(255, 193, 7, 0.3)',
+  // Layer 1: Outer container - blur shadow (0 15px 30px rgba(255, 193, 7, 0.3))
+  // Using hex with alpha: #FFC10780 = #FFC107 + 50% opacity
+  shadowBlurContainer: {
+    shadowColor: '#FFC10780',
     shadowOffset: { width: 0, height: 15 },
     shadowOpacity: 1,
     shadowRadius: 30,
-    elevation: 15,
+    elevation: 0,
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  // Actual button without shadow - shadow is handled by View wrapper
+  // Layer 2: Middle container - solid shadow (0 8px 0 #D9A406)
+  shadowSolidContainer: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: '#D9A406',
+    marginBottom: -8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Layer 3: Button body
   recordButton: {
     width: 96,
     height: 96,
     borderRadius: 48,
+    backgroundColor: '#FFC107',
+    transform: [{ translateY: -8 }],
     alignItems: 'center',
     justifyContent: 'center',
-    // Solid bottom border to simulate 0 8px 0 #D9A406
-    borderBottomWidth: 8,
-    borderBottomColor: '#D9A406',
   },
   micIcon: {
     fontSize: 40,
