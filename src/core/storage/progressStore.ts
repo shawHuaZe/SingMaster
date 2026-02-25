@@ -923,16 +923,58 @@ export const useProgressStore = create<ProgressStore>((set, get) => ({
     // Update completed lessons
     const completedLessons = [...progress.completedLessons, lessonId];
 
-    // Update level completion status
+    // Calculate stars based on level target
+    let earnedStars = 0;
     const updatedChapters = chapters.map(chapter => ({
       ...chapter,
       levels: chapter.levels.map(level => {
         if (level.id === lessonId) {
+          // Calculate stars
+          if (level.target) {
+            if (score >= level.target.threeStar) {
+              earnedStars = 3;
+            } else if (score >= level.target.twoStar) {
+              earnedStars = 2;
+            } else if (score >= level.target.oneStar) {
+              earnedStars = 1;
+            }
+          }
           return {
             ...level,
             isCompleted: true,
+            isUnlocked: true,
             bestScore: Math.max(level.bestScore || 0, score),
+            stars: Math.max(level.stars || 0, earnedStars),
           };
+        }
+        return level;
+      }),
+    }));
+
+    // Find next level to unlock
+    let nextLevelId: string | null = null;
+    let foundCompleted = false;
+
+    for (const chapter of chapters) {
+      for (const level of chapter.levels) {
+        if (foundCompleted && !level.isUnlocked) {
+          nextLevelId = level.id;
+          foundCompleted = false; // Reset to only find first
+          break;
+        }
+        if (level.id === lessonId) {
+          foundCompleted = true;
+        }
+      }
+      if (nextLevelId) break;
+    }
+
+    // Unlock next level if exists
+    const finalChapters = updatedChapters.map(chapter => ({
+      ...chapter,
+      levels: chapter.levels.map(level => {
+        if (level.id === nextLevelId) {
+          return { ...level, isUnlocked: true };
         }
         return level;
       }),
@@ -949,41 +991,49 @@ export const useProgressStore = create<ProgressStore>((set, get) => ({
 
     set({
       progress: newProgress,
-      chapters: updatedChapters,
+      chapters: finalChapters,
     });
-
-    // Unlock next level
-    get().unlockNextLevel();
   },
 
   unlockNextLevel: () => {
-    const { chapters, progress } = get();
+    // This function is now handled in completeLesson
+    // Kept for compatibility
+    const { chapters } = get();
 
-    // Find current chapter and level
-    let foundCurrent = false;
-    let unlocked = false;
-
+    // Find first unlocked but not completed level and ensure it's unlocked
+    let foundUnlocked = false;
     const updatedChapters = chapters.map((chapter, chapterIndex) => {
-      if (chapterIndex < progress.currentChapter) {
-        return chapter;
+      // First chapter is always unlocked
+      if (chapterIndex === 0) {
+        return {
+          ...chapter,
+          levels: chapter.levels.map((level, levelIndex) => {
+            // First level is always unlocked
+            if (levelIndex === 0) {
+              return { ...level, isUnlocked: true };
+            }
+            return level;
+          }),
+        };
       }
 
-      return {
-        ...chapter,
-        levels: chapter.levels.map((level, levelIndex) => {
-          if (chapterIndex === progress.currentChapter && levelIndex === progress.currentLevel) {
-            foundCurrent = true;
+      // Check if previous chapter is all completed
+      const prevChapter = chapters[chapterIndex - 1];
+      const prevChapterCompleted = prevChapter.levels.every(l => l.isCompleted);
+
+      if (prevChapterCompleted) {
+        return {
+          ...chapter,
+          levels: chapter.levels.map((level, levelIndex) => {
+            if (levelIndex === 0) {
+              return { ...level, isUnlocked: true };
+            }
             return level;
-          }
+          }),
+        };
+      }
 
-          if (foundCurrent && !unlocked) {
-            unlocked = true;
-            return { ...level, isUnlocked: true };
-          }
-
-          return level;
-        }),
-      };
+      return chapter;
     });
 
     set({ chapters: updatedChapters });

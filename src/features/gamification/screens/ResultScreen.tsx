@@ -1,5 +1,5 @@
 // Result Screen - After Practice
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useProgressStore } from '../../../core/storage/progressStore';
 import { Button } from '../../../shared/components';
 import { colors, spacing, typography } from '../../../shared/constants';
 import { RootStackParamList } from '../../../app/navigation/types';
@@ -19,6 +20,15 @@ const ResultScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<ResultRouteProp>();
   const { score, levelId } = route.params;
+  const { completeLesson } = useProgressStore();
+
+  // Complete the lesson when result screen loads
+  useEffect(() => {
+    if (score >= 60) {
+      // Only complete if passed (score >= 60)
+      completeLesson(levelId, score);
+    }
+  }, [levelId, score]);
 
   const getGrade = (score: number) => {
     if (score >= 90) return 'S';
@@ -48,6 +58,7 @@ const ResultScreen: React.FC = () => {
 
   const grade = getGrade(score);
   const gradeColor = getGradeColor(grade);
+  const passed = score >= 60;
 
   const handleRetry = () => {
     navigation.replace('Practice', { levelId });

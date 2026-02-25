@@ -1,4 +1,4 @@
-// Level Detail Screen
+// Level Detail Screen - Shows detailed level content
 import React from 'react';
 import {
   View,
@@ -9,13 +9,22 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useProgressStore, mockChapters } from '../../../core/storage/progressStore';
+import { useProgressStore } from '../../../core/storage/progressStore';
 import { Button, Card } from '../../../shared/components';
 import { colors, spacing, typography } from '../../../shared/constants';
 import { RootStackParamList } from '../../../app/navigation/types';
+import { Level } from '../../../shared/types';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type LevelDetailRouteProp = RouteProp<RootStackParamList, 'LevelDetail'>;
+
+// 岛屿信息
+const ISLANDS = [
+  { id: 1, name: '新手村', color: '#58CC02' },
+  { id: 2, name: 'KTV麦霸集训营', color: '#FFC107' },
+  { id: 3, name: '进阶歌手工坊', color: '#FF9800' },
+  { id: 4, name: '艺术家殿堂', color: '#F44336' },
+];
 
 const LevelDetailScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
@@ -24,14 +33,21 @@ const LevelDetailScreen: React.FC = () => {
   const { chapters } = useProgressStore();
 
   // Find the level
-  let level: any = null;
+  let level: Level | null = null;
   let chapterTitle = '';
+  let islandName = '';
+  let islandColor = colors.primary;
 
   for (const chapter of chapters) {
     const found = chapter.levels.find(l => l.id === levelId);
     if (found) {
       level = found;
       chapterTitle = chapter.title;
+      const island = ISLANDS.find(i => i.id === chapter.islandId);
+      if (island) {
+        islandName = island.name;
+        islandColor = island.color;
+      }
       break;
     }
   }
@@ -45,7 +61,27 @@ const LevelDetailScreen: React.FC = () => {
   }
 
   const handleStartPractice = () => {
-    navigation.navigate('Learning', { taskId: level.id });
+    navigation.navigate('Learning', { taskId: level!.id });
+  };
+
+  // 获取星级显示
+  const renderStars = () => {
+    const stars = level?.stars || 0;
+    return (
+      <View style={styles.starsContainer}>
+        {[1, 2, 3].map(i => (
+          <Text
+            key={i}
+            style={[
+              styles.star,
+              { color: i <= stars ? colors.warning : colors.border }
+            ]}
+          >
+            ★
+          </Text>
+        ))}
+      </View>
+    );
   };
 
   return (
@@ -56,11 +92,16 @@ const LevelDetailScreen: React.FC = () => {
       >
         {/* Header */}
         <View style={styles.header}>
-          <View style={styles.levelBadge}>
-            <Text style={styles.levelNumber}>LV.{level.levelNumber}</Text>
+          <View style={[styles.levelBadge, { backgroundColor: islandColor }]}>
+            <Text style={styles.levelIcon}>{level.icon || '🎵'}</Text>
           </View>
           <Text style={styles.title}>{level.title}</Text>
-          <Text style={styles.chapter}>{chapterTitle}</Text>
+          <View style={styles.locationRow}>
+            <Text style={styles.chapter}>{chapterTitle}</Text>
+            <Text style={styles.separator}>•</Text>
+            <Text style={styles.island}>{islandName}</Text>
+          </View>
+          {renderStars()}
         </View>
 
         {/* Description */}
@@ -69,24 +110,94 @@ const LevelDetailScreen: React.FC = () => {
           <Text style={styles.descText}>{level.description}</Text>
         </Card>
 
-        {/* Learning Objectives */}
-        <Card style={styles.objectivesCard}>
-          <Text style={styles.objectivesTitle}>学习目标</Text>
-          <View style={styles.objectiveList}>
-            <View style={styles.objectiveItem}>
-              <Text style={styles.objectiveBullet}>✓</Text>
-              <Text style={styles.objectiveText}>掌握基本技能</Text>
+        {/* Practice Content */}
+        {level.practiceContent && (
+          <Card style={styles.contentCard}>
+            <Text style={styles.contentTitle}>📝 练习内容</Text>
+            <View style={styles.practiceItem}>
+              <Text style={styles.practiceLabel}>练习文本：</Text>
+              <Text style={styles.practiceValue}>{level.practiceContent.exerciseText}</Text>
             </View>
-            <View style={styles.objectiveItem}>
-              <Text style={styles.objectiveBullet}>✓</Text>
-              <Text style={styles.objectiveText}>通过AI实时反馈提升</Text>
+            {level.practiceContent.exercisePhonetic && (
+              <View style={styles.practiceItem}>
+                <Text style={styles.practiceLabel}>注音：</Text>
+                <Text style={styles.practiceValue}>{level.practiceContent.exercisePhonetic}</Text>
+              </View>
+            )}
+            {level.practiceContent.notes && level.practiceContent.notes.length > 0 && (
+              <View style={styles.practiceItem}>
+                <Text style={styles.practiceLabel}>目标音符：</Text>
+                <Text style={styles.practiceValue}>{level.practiceContent.notes.join(' - ')}</Text>
+              </View>
+            )}
+            {level.practiceContent.bpm && (
+              <View style={styles.practiceItem}>
+                <Text style={styles.practiceLabel}>节拍速度：</Text>
+                <Text style={styles.practiceValue}>{level.practiceContent.bpm} BPM</Text>
+              </View>
+            )}
+            {level.practiceContent.duration && (
+              <View style={styles.practiceItem}>
+                <Text style={styles.practiceLabel}>持续时间：</Text>
+                <Text style={styles.practiceValue}>{level.practiceContent.duration} 秒</Text>
+              </View>
+            )}
+          </Card>
+        )}
+
+        {/* Target Stars */}
+        {level.target && (
+          <Card style={styles.targetCard}>
+            <Text style={styles.targetTitle}>⭐ 星级目标</Text>
+            <View style={styles.targetRow}>
+              <View style={styles.targetItem}>
+                <Text style={styles.targetStar}>⭐</Text>
+                <Text style={styles.targetScore}>{level.target.oneStar}分</Text>
+                <Text style={styles.targetLabel}>通过</Text>
+              </View>
+              <View style={styles.targetItem}>
+                <Text style={styles.targetStar}>⭐⭐</Text>
+                <Text style={styles.targetScore}>{level.target.twoStar}分</Text>
+                <Text style={styles.targetLabel}>良好</Text>
+              </View>
+              <View style={styles.targetItem}>
+                <Text style={styles.targetStar}>⭐⭐⭐</Text>
+                <Text style={styles.targetScore}>{level.target.threeStar}分</Text>
+                <Text style={styles.targetLabel}>完美</Text>
+              </View>
             </View>
-            <View style={styles.objectiveItem}>
-              <Text style={styles.objectiveBullet}>✓</Text>
-              <Text style={styles.objectiveText}>完成关卡获得经验值</Text>
+          </Card>
+        )}
+
+        {/* Detection Metrics */}
+        {level.detectionMetrics && (
+          <Card style={styles.metricsCard}>
+            <Text style={styles.metricsTitle}>🎯 评分指标</Text>
+            <View style={styles.metricsList}>
+              {level.detectionMetrics.metrics.map((metric, index) => (
+                <View key={index} style={styles.metricItem}>
+                  <Text style={styles.metricBullet}>•</Text>
+                  <Text style={styles.metricText}>{metric}</Text>
+                </View>
+              ))}
             </View>
-          </View>
-        </Card>
+          </Card>
+        )}
+
+        {/* Tips */}
+        {level.tips && level.tips.length > 0 && (
+          <Card style={styles.tipsCard}>
+            <Text style={styles.tipsTitle}>💡 练习提示</Text>
+            <View style={styles.tipsList}>
+              {level.tips.map((tip, index) => (
+                <View key={index} style={styles.tipItem}>
+                  <Text style={styles.tipBullet}>{index + 1}.</Text>
+                  <Text style={styles.tipText}>{tip}</Text>
+                </View>
+              ))}
+            </View>
+          </Card>
+        )}
 
         {/* Best Score */}
         {level.bestScore !== undefined && (
@@ -103,14 +214,6 @@ const LevelDetailScreen: React.FC = () => {
           size="large"
           style={styles.startButton}
         />
-
-        {/* Tips */}
-        <View style={styles.tips}>
-          <Text style={styles.tipsTitle}>💡 练习小贴士</Text>
-          <Text style={styles.tipsText}>
-            建议在安静的环境下练习，使用耳机可以获得更好的体验。每次练习后注意听AI导师的反馈，这是进步的关键！
-          </Text>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -132,25 +235,45 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   levelBadge: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: spacing.radiusFull,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: spacing.md,
   },
-  levelNumber: {
-    ...typography.labelLarge,
-    color: '#FFFFFF',
+  levelIcon: {
+    fontSize: 36,
   },
   title: {
     ...typography.displaySmall,
     color: colors.text,
     textAlign: 'center',
   },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.sm,
+  },
   chapter: {
     ...typography.bodyMedium,
     color: colors.textSecondary,
+  },
+  separator: {
+    marginHorizontal: spacing.sm,
+    color: colors.textTertiary,
+  },
+  island: {
+    ...typography.bodyMedium,
+    color: colors.textSecondary,
+  },
+  starsContainer: {
+    flexDirection: 'row',
     marginTop: spacing.sm,
+  },
+  star: {
+    fontSize: 24,
+    marginHorizontal: 2,
   },
   descCard: {
     marginBottom: spacing.md,
@@ -165,29 +288,107 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 22,
   },
-  objectivesCard: {
+  contentCard: {
     marginBottom: spacing.md,
+    backgroundColor: colors.primaryLight,
   },
-  objectivesTitle: {
+  contentTitle: {
     ...typography.headingSmall,
     color: colors.text,
     marginBottom: spacing.md,
   },
-  objectiveList: {
+  practiceItem: {
+    flexDirection: 'row',
+    marginBottom: spacing.sm,
+  },
+  practiceLabel: {
+    ...typography.bodyMedium,
+    color: colors.textSecondary,
+    width: 80,
+  },
+  practiceValue: {
+    ...typography.bodyMedium,
+    color: colors.text,
+    flex: 1,
+  },
+  targetCard: {
+    marginBottom: spacing.md,
+  },
+  targetTitle: {
+    ...typography.headingSmall,
+    color: colors.text,
+    marginBottom: spacing.md,
+    textAlign: 'center',
+  },
+  targetRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  targetItem: {
+    alignItems: 'center',
+  },
+  targetStar: {
+    fontSize: 24,
+    marginBottom: spacing.xs,
+  },
+  targetScore: {
+    ...typography.headingMedium,
+    color: colors.primary,
+  },
+  targetLabel: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+  },
+  metricsCard: {
+    marginBottom: spacing.md,
+  },
+  metricsTitle: {
+    ...typography.headingSmall,
+    color: colors.text,
+    marginBottom: spacing.md,
+  },
+  metricsList: {
     gap: spacing.sm,
   },
-  objectiveItem: {
+  metricItem: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  objectiveBullet: {
-    color: colors.success,
+  metricBullet: {
+    color: colors.primary,
     marginRight: spacing.sm,
     fontSize: 16,
   },
-  objectiveText: {
+  metricText: {
     ...typography.bodyMedium,
     color: colors.text,
+  },
+  tipsCard: {
+    marginBottom: spacing.md,
+    backgroundColor: colors.warningLight,
+  },
+  tipsTitle: {
+    ...typography.headingSmall,
+    color: colors.text,
+    marginBottom: spacing.md,
+  },
+  tipsList: {
+    gap: spacing.sm,
+  },
+  tipItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  tipBullet: {
+    color: colors.text,
+    marginRight: spacing.sm,
+    fontWeight: 'bold',
+  },
+  tipText: {
+    ...typography.bodyMedium,
+    color: colors.text,
+    flex: 1,
   },
   scoreCard: {
     marginBottom: spacing.lg,
@@ -203,21 +404,6 @@ const styles = StyleSheet.create({
   },
   startButton: {
     marginBottom: spacing.lg,
-  },
-  tips: {
-    backgroundColor: colors.warningLight,
-    borderRadius: spacing.radiusMd,
-    padding: spacing.md,
-  },
-  tipsTitle: {
-    ...typography.labelLarge,
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  tipsText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    lineHeight: 20,
   },
   errorText: {
     ...typography.bodyLarge,
