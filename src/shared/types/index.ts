@@ -31,6 +31,30 @@ export type CourseCategory =
   | 'style'           // 风格表现
   | 'creation';       // 创作编曲
 
+// Level types with detailed training content
+export interface LevelPracticeContent {
+  // 练习内容
+  exerciseText: string;          // 练习文本/歌词
+  exercisePhonetic?: string;     // 音标/注音
+  notes: string[];               // 目标音符
+  bpm?: number;                  // 节拍速度
+  duration?: number;             // 持续时间(秒)
+}
+
+export interface LevelTarget {
+  // 等级目标（星级）
+  oneStar: number;               // 1星目标
+  twoStar: number;              // 2星目标
+  threeStar: number;            // 3星目标
+}
+
+export interface AIDetectionMetrics {
+  // AI检测指标
+  metrics: string[];            // 检测指标列表
+  pitchAccuracy?: number;       // 音准精度要求
+  rhythmStability?: number;     // 节奏稳定性要求
+}
+
 export interface Level {
   id: string;
   courseId: string;
@@ -40,6 +64,15 @@ export interface Level {
   isUnlocked: boolean;
   isCompleted: boolean;
   bestScore?: number;
+  stars?: number;                // 获得星星数 0-3
+
+  // 扩展字段
+  practiceContent?: LevelPracticeContent;
+  target?: LevelTarget;
+  detectionMetrics?: AIDetectionMetrics;
+  tips?: string[];               // 练习提示
+  icon?: string;                 // 关卡图标
+  difficulty?: 'easy' | 'medium' | 'hard';
 }
 
 export interface Chapter {
@@ -47,6 +80,10 @@ export interface Chapter {
   title: string;
   description: string;
   levels: Level[];
+  // 扩展字段
+  islandId?: number;              // 所属岛屿 1-4
+  unitId?: number;               // 单元编号 1-14
+  icon?: string;                 // 章节图标
 }
 
 // Practice types
