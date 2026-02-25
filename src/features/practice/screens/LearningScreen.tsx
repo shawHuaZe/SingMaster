@@ -52,6 +52,7 @@ const LearningScreen: React.FC = () => {
   const slideAnim = useRef(new Animated.Value(0)).current;
   const scrollXRef = useRef(new Animated.Value(0)).current;
   const scrollViewRef = useRef<ScrollView>(null);
+  const progressAnim = useRef(new Animated.Value(0)).current;
 
   // Editor state (hidden from UI)
   const [showEditor, setShowEditor] = useState(false);
@@ -221,10 +222,19 @@ const LearningScreen: React.FC = () => {
     setEditorLyrics('');
   };
 
-  // Dynamic progress based on task completion - start at 0%, increase after completing each task
+  // Dynamic progress based on task completion - start at 0%, advance by 1/n for each completed task
   const progressPercent = tasks.length > 0
     ? (currentTaskIndex / tasks.length) * 100
     : 0;
+
+  // Animate progress bar when task index changes
+  React.useEffect(() => {
+    Animated.timing(progressAnim, {
+      toValue: progressPercent,
+      duration: 500,
+      useNativeDriver: false,
+    }).start();
+  }, [currentTaskIndex]);
 
   // Interpolate glow color and opacity
   const glowColor = glowAnim.interpolate({
@@ -276,10 +286,20 @@ const LearningScreen: React.FC = () => {
             <Text style={styles.closeButton}>✕</Text>
           </TouchableOpacity>
           <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${progressPercent}%` }]}>
+            <Animated.View
+              style={[
+                styles.progressFill,
+                {
+                  width: progressAnim.interpolate({
+                    inputRange: [0, 100],
+                    outputRange: ['0%', '100%'],
+                  }),
+                },
+              ]}
+            >
               {/* Highlight effect - only on yellow portion */}
               <View style={styles.progressHighlight} />
-            </View>
+            </Animated.View>
           </View>
         </View>
 
