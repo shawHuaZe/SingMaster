@@ -266,7 +266,7 @@ const LearningScreen: React.FC = () => {
         Animated.timing(glowAnim, {
           toValue: 1,
           duration: 1200,
-          useNativeDriver: true,
+          useNativeDriver: false,
         })
       );
       glowAnim.setValue(0);
@@ -376,11 +376,8 @@ const LearningScreen: React.FC = () => {
             ]}
           />
 
-          {/* New shadow structure - two-layer shadow with elevation for Android */}
+          {/* Shadow structure - simplified for proper Android display */}
           <View style={styles.shadowWrapper}>
-            {/* 模糊光晕层 */}
-            <Animated.View style={[styles.shadowGlow]} />
-
             {/* 实体阴影层 */}
             <View style={styles.shadowSolid}>
               {/* 按钮本体 */}
