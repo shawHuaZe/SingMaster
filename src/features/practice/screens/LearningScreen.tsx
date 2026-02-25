@@ -246,10 +246,15 @@ const LearningScreen: React.FC = () => {
     outputRange: ['rgba(28, 176, 246, 0)', 'rgba(28, 176, 246, 0.4)', 'rgba(255, 75, 75, 0.4)'],
   });
 
-  // Spreading aura scale
+  // Spreading aura scale and opacity
   const glowScale = glowAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 1.5],
+    outputRange: [1, 1.8],
+  });
+
+  const glowOpacity = glowAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.6, 0],
   });
 
   const recordButtonBg = slideCancel ? '#FF4B4B' : '#FFC107';
@@ -257,23 +262,16 @@ const LearningScreen: React.FC = () => {
   // Start spreading glow animation when recording
   React.useEffect(() => {
     if (isRecording && !slideCancel) {
-      // Start pulsing animation
-      const pulsingAnim = Animated.loop(
-        Animated.sequence([
-          Animated.timing(glowAnim, {
-            toValue: 1,
-            duration: 500,
-            useNativeDriver: false,
-          }),
-          Animated.timing(glowAnim, {
-            toValue: 0.5,
-            duration: 500,
-            useNativeDriver: false,
-          }),
-        ])
+      const anim = Animated.loop(
+        Animated.timing(glowAnim, {
+          toValue: 1,
+          duration: 1200,
+          useNativeDriver: true,
+        })
       );
-      pulsingAnim.start();
-      return () => pulsingAnim.stop();
+      glowAnim.setValue(0);
+      anim.start();
+      return () => anim.stop();
     }
   }, [isRecording, slideCancel]);
 
@@ -366,32 +364,26 @@ const LearningScreen: React.FC = () => {
           style={styles.recordButtonContainer}
           {...panResponder.panHandlers}
         >
-          {/* Glow effect - spreading aura */}
+          {/* 扩散光晕 - 使用 scale + opacity 动画 */}
           <Animated.View
+            pointerEvents="none"
             style={[
-              styles.glowEffect,
+              styles.glowPulse,
               {
-                backgroundColor: glowColor,
                 transform: [{ scale: glowScale }],
-                opacity: isRecording ? 1 : 0,
-              },
-            ]}
-          />
-          {/* Border ring effect */}
-          <Animated.View
-            style={[
-              styles.glowRing,
-              {
-                borderColor: slideCancel ? 'rgba(255, 75, 75, 0.3)' : 'rgba(255, 193, 7, 0.3)',
-                transform: [{ scale: glowScale }],
-                opacity: isRecording ? 1 : 0,
+                opacity: glowOpacity,
               },
             ]}
           />
 
-          {/* Three-layer nested View for two-layer shadow (iOS + Android compatible) */}
-          <View style={styles.shadowBlurContainer}>
-            <View style={styles.shadowSolidContainer}>
+          {/* New shadow structure - two-layer shadow with elevation for Android */}
+          <View style={styles.shadowWrapper}>
+            {/* 模糊光晕层 */}
+            <Animated.View style={[styles.shadowGlow]} />
+
+            {/* 实体阴影层 */}
+            <View style={styles.shadowSolid}>
+              {/* 按钮本体 */}
               <Animated.View
                 style={[
                   styles.recordButton,
@@ -585,50 +577,47 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  glowEffect: {
+  // 外层容器
+  shadowWrapper: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  // 模糊光晕层 - 用透明背景模拟 rgba 阴影
+  shadowGlow: {
     position: 'absolute',
     width: 120,
     height: 120,
     borderRadius: 60,
+    backgroundColor: 'rgba(255,193,7,0.30)',
+    transform: [{ translateY: 15 }],
   },
-  glowRing: {
-    position: 'absolute',
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    borderWidth: 4,
-  },
-  // Layer 1: Outer container - blur shadow (0 15px 30px rgba(255, 193, 7, 0.3))
-  // Using hex with alpha: #FFC10780 = #FFC107 + 50% opacity
-  shadowBlurContainer: {
-    shadowColor: '#FFC10780',
-    shadowOffset: { width: 0, height: 15 },
-    shadowOpacity: 1,
-    shadowRadius: 30,
-    elevation: 0,
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  // Layer 2: Middle container - solid shadow (0 8px 0 #D9A406)
-  shadowSolidContainer: {
+  // 实体底部阴影
+  shadowSolid: {
     width: 96,
     height: 96,
     borderRadius: 48,
     backgroundColor: '#D9A406',
-    marginBottom: -8,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 6, // Android 真实阴影
   },
-  // Layer 3: Button body
+  // 按钮本体
   recordButton: {
     width: 96,
     height: 96,
     borderRadius: 48,
     backgroundColor: '#FFC107',
-    transform: [{ translateY: -8 }],
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
+    transform: [{ translateY: -8 }],
+  },
+  // 扩散光晕样式
+  glowPulse: {
+    position: 'absolute',
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: 'rgba(255,193,7,0.35)',
   },
   micIcon: {
     fontSize: 40,
